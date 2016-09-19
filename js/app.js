@@ -4,13 +4,12 @@ if (!Detector.webgl) {
 
 var container;
 
-var SPEED = 0.01;
-
 var camera, controls, scene, renderer;
-var lighting, ambient, keyLight, fillLight, backLight;
 
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
+
+var OBJLoaded;
 
 init();
 animate();
@@ -22,25 +21,44 @@ function init() {
 
     /* Camera */
 
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-    camera.position.z = 3;
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.x = 0;
+    camera.position.y = 5;
+    camera.position.z = 8;
 
     /* Scene */
 
     scene = new THREE.Scene();
-    lighting = false;
+    // lighting = false;
 
-    ambient = new THREE.AmbientLight(0xffffff, 1.0);
+    var ambient = new THREE.AmbientLight(0xffffff, 1.0);
     scene.add(ambient);
 
-    keyLight = new THREE.DirectionalLight(new THREE.Color('hsl(30, 100%, 75%)'), 1.0);
-    keyLight.position.set(-100, 0, 100);
+    var spotLight = new THREE.SpotLight(0xffffff);
+    spotLight.position.set(50, 100, 50);
+    spotLight.angle = Math.PI / 7;
+    spotLight.penumbra = 0.8
+    spotLight.castShadow = true;
+    scene.add(spotLight);
 
-    fillLight = new THREE.DirectionalLight(new THREE.Color('hsl(240, 100%, 75%)'), 0.75);
-    fillLight.position.set(100, 0, 100);
+    //floor
 
-    backLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    backLight.position.set(100, 0, -100).normalize();
+
+    var floorMaterial = new THREE.MeshStandardMaterial( {
+                    map: null,
+                    roughnessMap: null,
+                    color: 0xffffff,
+                    metalness: 0.0,
+                    roughness: 0.0,
+                    shading: THREE.SmoothShading
+                } );
+    var planeGeometry = new THREE.PlaneBufferGeometry( 8, 8 );
+
+    var planeMesh1 = new THREE.Mesh( planeGeometry, floorMaterial );
+                planeMesh1.position.y = - 2;
+                planeMesh1.rotation.x = - Math.PI * 0.5;
+                planeMesh1.receiveShadow = true;
+                scene.add( planeMesh1 );
 
     /* Model */
 
@@ -49,6 +67,7 @@ function init() {
     mtlLoader.setPath('assets/');
     mtlLoader.load('ZansCube.mtl', function (materials) {
 
+
         materials.preload();
 
         var objLoader = new THREE.OBJLoader();
@@ -56,6 +75,7 @@ function init() {
         objLoader.setPath('assets/');
         objLoader.load('ZansCube.obj', function (object) {
 
+            OBJLoaded = object;
             scene.add(object);
 
         });
@@ -68,21 +88,19 @@ function init() {
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor( 0x000000, 0 );
-
+    renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
-
     /* Controls */
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.25;
-    controls.enableZoom = false;
+    controls.enableZoom = true;
 
     /* Events */
 
     window.addEventListener('resize', onWindowResize, false);
     window.addEventListener('keydown', onKeyboardEvent, false);
-
 }
 
 function onWindowResize() {
@@ -134,6 +152,12 @@ function animate() {
 }
 
 function render() {
+
+    var rotSpeed = 0.004;
+    if (OBJLoaded)
+    {
+        OBJLoaded.rotation.y -= rotSpeed;
+    }
 
     renderer.render(scene, camera);
 
